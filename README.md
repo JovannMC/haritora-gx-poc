@@ -1,5 +1,5 @@
-# haritora-gx6-slimevr-bridge
-People wanted a way to communicate with the GX6 Communication Dongle for the HaritoraX Wireless trackers, so after a couple days of work here is a script you can get inspired from interact with the dongle!<br>
+# haritora-gx6-poc
+People wanted a way to communicate with the GX6 Communication Dongle for the HaritoraX Wireless trackers, so after a couple days of work here is a proof-of-concept script that does just that!<br>
 
 ![Alt text](showcase.png)
 
