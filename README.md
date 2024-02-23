@@ -28,7 +28,7 @@ This project allows you to interface with the **GX6 Communication Dongle** to gr
 
 The dongle works by acting as a `Generic USB Hub` and within it, three `USB Serial Device`s are plugged in. These serial devices communicate with two trackers each (with a total of all 6 trackers split between the three) which allows the [HaritoraConfigurator](https://shop.shiftall.net/en-us/products/haritoraconfigurator-global) software to communicate with the trackers.
 
-When first opening a connection to the serial port, the software reports the dongle's model number, firmware version, and serial number under the `i` label (followed by unknown `o`/`o0`/`o1` values). The dongle is constantly finding its two trackers under the labels `a0` and `a1`, outputting the value of `7f7f7f7f7f7f` for both. After a tracker is connected to a port, the tracker reports its battery status under the `v0` label - battery voltage, percentage remaining, and status. Then, it starts reporting the IMU tracking data under its specific label (`x0` and `x1`). When either the main or sub button is pressed on the tracker, a `r0` label is used which tracks how many times both buttons have been pressed using hexadecimal under the same 12 bits of data (character 7 for main, character 10 for sub), up until 15 (which is `f`, and is 0-indexed) to which it resets back to 0.
+When first opening a connection to the serial port, the software reports the dongle's model number, firmware version, and serial number under the `i` label (followed by unknown `o`/`o0`/`o1` values). The dongle is constantly finding its two trackers under the labels `a0` and `a1`, outputting the value of `7f7f7f7f7f7f` for both. After a tracker is connected to a port, the tracker reports its battery status under the `v0` label - battery voltage, percentage remaining, and status. Then, it starts reporting the IMU tracking data under its specific label (`x0` and `x1`) which is encoded in base64. When either the main or sub button is pressed on the tracker, a `r0` label is used which tracks how many times both buttons have been pressed using hexadecimal under the same 12 bits of data (character 7 for main, character 10 for sub), up until 15 (which is `f`, and is 0-indexed) to which it resets back to 0.
 
 ![USBLogView window showing a "Generic USB Hub" and three "USB Serial Devices" plugged in](usblogview.png)
 
@@ -40,8 +40,8 @@ Examples for values of each label I found:
 - `a0:7f7f7f7f7f7f` - searching for/unable to find tracker 1
 - `a1:7f7f7f7f7f7f` - searching for/unable to find tracker 2
 - `v0:{"battery voltage":4107,"battery remaining":94,"charge status":"Discharging"}` - battery voltage, percentage remaining, and status
-- `X0:0Ayb3u7+DzWeBxoDVQMAAA==` - raw IMU tracking data for tracker 1
-- `X1:RAJ95/72YjrkBo4BGQcCAA==` - raw IMU tracking data for tracker 2
+- `X0:0Ayb3u7+DzWeBxoDVQMAAA==` - raw IMU tracking data for tracker 1, encoded in base64
+- `X1:RAJ95/72YjrkBo4BGQcCAA==` - raw IMU tracking data for tracker 2, encoded in base64
 - `r0:110060800a00` -  - raw IMU button data - main button pressed 7 times, sub button pressed 9 times (0-indexed, a = 10 in hex)
 
 Right now o/o0/o1 are unknown and I believe a0/a1 could also be used to provide calibration data to the software. **Any help is appreciated!**
