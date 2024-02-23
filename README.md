@@ -42,7 +42,7 @@ Examples for values of each label I found:
 - `v0:{"battery voltage":4107,"battery remaining":94,"charge status":"Discharging"}` - battery voltage, percentage remaining, and status
 - `X0:0Ayb3u7+DzWeBxoDVQMAAA==` - raw IMU tracking data for tracker 1
 - `X1:RAJ95/72YjrkBo4BGQcCAA==` - raw IMU tracking data for tracker 2
-- `r0:110060800600` -  - raw IMU button data - main button pressed 8 times, sub button pressed 6 times
+- `r0:110060800a00` -  - raw IMU button data - main button pressed 8 times, sub button pressed 10 times (a = 10 in hex)
 
 Right now o/o0/o1 are unknown and I believe a0/a1 could also be used to provide calibration data to the software. **Any help is appreciated!**
 
