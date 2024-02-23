@@ -92,18 +92,18 @@ def process_data(data):
 def process_x0_data(data):
     try:
         rotation, gravity = decode_imu_packet(data)
-        logging.info(f'X0 Rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
-        logging.info(f'X0 Gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+        logging.info(f'Tracker 1 rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
+        logging.info(f'Tracker 1 gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
     except DecodeError as e:
-        logging.info("Error decoding X0 IMU packet:", e)
+        logging.info("Error decoding tracker 1 IMU packet:", e)
 
 def process_x1_data(data):
     try:
         rotation, gravity = decode_imu_packet(data)
-        logging.info(f'X1 Rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
-        logging.info(f'X1 Gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+        logging.info(f'Tracker 2 Rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
+        logging.info(f'Tracker 2 Gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
     except DecodeError as e:
-        logging.info("Error decoding X1 IMU packet:", e)
+        logging.info("Error decoding tracker 2 IMU packet:", e)
 
 #
 # Other tracker data
