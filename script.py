@@ -7,6 +7,19 @@ PORT = 9876
 class DecodeError(Exception):
     pass
 
+class Rotation:
+    def __init__(self, x, y, z, w):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.w = w
+
+class Gravity:
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
 def start_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind((HOST, PORT))
@@ -37,23 +50,23 @@ def process_data(data):
             elif label == b'X1':
                 process_x1_data(data)
             #elif label == b'a0':
-                #process_a0_data(data)
+                process_a0_data(data)
             #elif label == b'a1':
-                #process_a1_data(data)
+                process_a1_data(data)
 
 def process_x0_data(data):
     try:
         # Decode IMU packet
-        rotation_x, rotation_y, rotation_z, rotation_w, gravity_x, gravity_y, gravity_z = decode_imu_packet(data)
-        print(f'Processing X0 IMU data - Rotation: ({rotation_x}, {rotation_y}, {rotation_z}, {rotation_w}), Gravity: ({gravity_x}, {gravity_y}, {gravity_z})')
+        rotation, gravity = decode_imu_packet(data)
+        print(f'Processing X0 IMU data - Rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}), Gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
     except DecodeError as e:
         print("Error decoding X0 IMU packet:", e)
 
 def process_x1_data(data):
     try:
         # Decode IMU packet
-        rotation_x, rotation_y, rotation_z, rotation_w, gravity_x, gravity_y, gravity_z = decode_imu_packet(data)
-        print(f'Processing X1 IMU data - Rotation: ({rotation_x}, {rotation_y}, {rotation_z}, {rotation_w}), Gravity: ({gravity_x}, {gravity_y}, {gravity_z})')
+        rotation, gravity = decode_imu_packet(data)
+        print(f'Processing X1 IMU data - Rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}), Gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
     except DecodeError as e:
         print("Error decoding X1 IMU packet:", e)
 
@@ -67,11 +80,22 @@ def process_a1_data(data):
 
 def decode_imu_packet(data):
     try:
-        if len(data) < 14:
+        if len(data) < 20:
             raise DecodeError("Too few bytes to decode IMU packet")
-            
+
         rotation_x, rotation_y, rotation_z, rotation_w, gravity_x, gravity_y, gravity_z = struct.unpack('<hhhhhhh', data[:14])
-        return rotation_x, rotation_y, rotation_z, rotation_w, gravity_x, gravity_y, gravity_z
+        rotation = Rotation(
+            x=rotation_x / 180.0 * 0.01,
+            y=rotation_y / 180.0 * 0.01,
+            z=rotation_z / 180.0 * 0.01 * -1.0,
+            w=rotation_w / 180.0 * 0.01 * -1.0
+        )
+        gravity = Gravity(
+            x=gravity_x / 256.0,
+            y=gravity_y / 256.0,
+            z=gravity_z / 256.0
+        )
+        return rotation, gravity
     except (struct.error, DecodeError) as e:
         raise DecodeError("Error decoding IMU packet") from e
 
