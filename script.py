@@ -3,6 +3,13 @@
 
 import socket
 import struct
+import argparse
+import logging
+from datetime import datetime
+
+# Initialize logger and debug mode variable
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+debug_mode = False
 
 # Echo the data to these details for the program to interpret, recommended to use RealTerm.
 HOST = '127.0.0.1'
@@ -37,10 +44,10 @@ def start_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind((HOST, PORT))
         server_socket.listen()
-        print(f'Server listening on {HOST}:{PORT}')
+        logging.info(f'Server listening on {HOST}:{PORT}')
         while True:
             client_socket, client_address = server_socket.accept()
-            print(f'Connection established from {client_address}')
+            logging.info(f'Connection established from {client_address}')
             handle_client(client_socket)
 
 def handle_client(client_socket):
@@ -53,7 +60,9 @@ def handle_client(client_socket):
 
 def process_data(data):
     lines = data.strip().split(b'\n')
-    # print(f"Processed lines: {lines}") - add --debug for this
+    if (debug_mode):
+        # Print raw data received by server
+        logging.debug(f"Processed lines: {lines}")
     for line in lines:
         parts = line.split(b':', 1)
         if len(parts) == 2:
@@ -83,38 +92,38 @@ def process_data(data):
 def process_x0_data(data):
     try:
         rotation, gravity = decode_imu_packet(data)
-        print(f'X0 Rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
-        print(f'X0 Gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+        logging.info(f'X0 Rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
+        logging.info(f'X0 Gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
     except DecodeError as e:
-        print("Error decoding X0 IMU packet:", e)
+        logging.info("Error decoding X0 IMU packet:", e)
 
 def process_x1_data(data):
     try:
         rotation, gravity = decode_imu_packet(data)
-        print(f'X1 Rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
-        print(f'X1 Gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+        logging.info(f'X1 Rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
+        logging.info(f'X1 Gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
     except DecodeError as e:
-        print("Error decoding X1 IMU packet:", e)
+        logging.info("Error decoding X1 IMU packet:", e)
 
 #
 # Other tracker data
 # Currently unsure what other data a0/a1 could represent other than trying to finding the trackers, I see other values for it too.
-# This could also be used to report calibration data when running the calibration thru the software.
+# This could also be used to report calibration data when running the calibration thru the software. Also could be if tracker is just turned on/off.
 #
 
 def process_a0_data(data):
     decoded_data = data.decode('utf-8')
     if decoded_data.strip() == '7f7f7f7f7f7f':
-        print("Searching for tracker 0...")
+        logging.info("Searching for tracker 0...")
     else:
-        print(f"Processing A0 data: {decoded_data}")
+        logging.info(f"Other A0 data processed: {decoded_data}")
 
 def process_a1_data(data):
     decoded_data = data.decode('utf-8')
     if decoded_data.strip() == '7f7f7f7f7f7f':
-        print("Searching for tracker 1...")
+        logging.info("Searching for tracker 1...")
     else:
-        print(f"Processing A0 data: {decoded_data}")
+        logging.info(f"Other A1 data processed: {decoded_data}")
 
 #
 # Tracker button data
@@ -131,14 +140,14 @@ def process_r0_data(data):
     # This is a pretty janky way to track which button has been pressed, but seems to be the best way right now.
     # This is due to how the data is received (r1:110060800400), where both the main button (8) and sub button (4) are tracked in the same 12 bits.
     if main_button_press_count != prev_main_button_press_count:
-        print(f"Main button pressed. Pressed {main_button_press_count + 1} times.")
+        logging.info(f"Main button pressed. Pressed {main_button_press_count + 1} times.")
         prev_main_button_press_count = main_button_press_count
     elif sub_button_press_count != prev_sub_button_press_count:
-        print(f"Sub button pressed. Pressed {sub_button_press_count + 1} times.")
+        logging.info(f"Sub button pressed. Pressed {sub_button_press_count + 1} times.")
         prev_sub_button_press_count = sub_button_press_count
     else:
-        print("No new button press detected.. wait how did this run?")
-        print(decoded_data)
+        logging.info("No new button press detected.. wait how did this run?")
+        logging.info(decoded_data)
 
 #
 # Decoding IMU packets
@@ -168,4 +177,19 @@ def decode_imu_packet(data):
         raise DecodeError("Error decoding IMU packet") from e
 
 if __name__ == "__main__":
+    # Parse command argument(s), if any
+    parser = argparse.ArgumentParser(description='Process the data by the HaritoraX Wireless trackers, from the GX6 Communication Dongle')
+    parser.add_argument('--debug', action='store_true', help='Enable debug mode and log output to a file.')
+    args = parser.parse_args()
+
+    # If --debug flag is provided, log to a file with the current date and time
+    if args.debug:
+        debug_mode = True
+        logging.debug("Debug mode enabled, printing raw data and logging to file.")
+        log_filename = f"debug_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        file_handler = logging.FileHandler(log_filename)
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        logging.getLogger().addHandler(file_handler)
+        
     start_server()
