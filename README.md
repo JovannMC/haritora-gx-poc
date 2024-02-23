@@ -1,7 +1,7 @@
 # haritora-gx6-poc
 People wanted a way to communicate with the GX6 Communication Dongle for the HaritoraX Wireless trackers, so after a couple days of work here is a proof-of-concept script that does just that!<br>
 
-![Alt text](showcase.png)
+![Showcase of the script, showing the interpreted IMU tracking data from the dongle for tracker 1](showcase.png)
 
 ## Description
 The [SlimeTora](https://github.com/OCSYT/SlimeTora) project allows you to connect the HaritoraX Wireless trackers to the SlimeVR server software, which many people found to be more stable. Unfortunately it only supported Bluetooth with people who use the GX6 Communication Dongle left out.. until now.*
