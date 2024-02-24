@@ -19,8 +19,10 @@ PORT = 9876
 prev_main_button_press_count = 0
 prev_sub_button_press_count = 0
 
+
 class DecodeError(Exception):
     pass
+
 
 class Rotation:
     def __init__(self, x, y, z, w):
@@ -29,11 +31,13 @@ class Rotation:
         self.z = z
         self.w = w
 
+
 class Gravity:
     def __init__(self, x, y, z):
         self.x = x
         self.y = y
         self.z = z
+
 
 #
 # Server stuff
@@ -50,6 +54,7 @@ def start_server():
             logging.info(f'Connection established from {client_address}')
             handle_client(client_socket)
 
+
 def handle_client(client_socket):
     with client_socket:
         while True:
@@ -58,9 +63,10 @@ def handle_client(client_socket):
                 break
             process_data(data)
 
+
 def process_data(data):
     lines = data.strip().split(b'\n')
-    if (debug_mode):
+    if debug_mode:
         # Print raw data received by server
         logging.debug(f"Processed lines: {lines}")
     for line in lines:
@@ -82,9 +88,12 @@ def process_data(data):
             if label == b'r0':
                 # Button press data
                 process_r0_data(data)
+
+
 #
 # Tracker data
-# This is obviously the IMU tracking data, the juicy stuff. Can be used to forward to other software such as SlimeVR's server!
+# This is obviously the IMU tracking data, the juicy stuff.
+# Can be used to forward to other software such as SlimeVR's server!
 # Rotation has: x, y, z, w
 # Gravity has: x, y, z
 #
@@ -97,6 +106,7 @@ def process_x0_data(data):
     except DecodeError as e:
         logging.info("Error decoding tracker 1 IMU packet:", e)
 
+
 def process_x1_data(data):
     try:
         rotation, gravity = decode_imu_packet(data)
@@ -105,10 +115,12 @@ def process_x1_data(data):
     except DecodeError as e:
         logging.info("Error decoding tracker 2 IMU packet:", e)
 
+
 #
 # Other tracker data
-# Currently unsure what other data a0/a1 could represent other than trying to finding the trackers, I see other values for it too.
-# This could also be used to report calibration data when running the calibration thru the software. Also could be if tracker is just turned on/off.
+# Currently unsure what other data a0/a1 could represent other than trying to find the
+# trackers, I see other values for it too. This could also be used to report calibration data when running the
+# calibration through the software. Also, could be if tracker is just turned on/off.
 #
 
 def process_a0_data(data):
@@ -118,6 +130,7 @@ def process_a0_data(data):
     else:
         logging.info(f"Other A0 data processed: {decoded_data}")
 
+
 def process_a1_data(data):
     decoded_data = data.decode('utf-8')
     if decoded_data.strip() == '7f7f7f7f7f7f':
@@ -125,12 +138,14 @@ def process_a1_data(data):
     else:
         logging.info(f"Other A1 data processed: {decoded_data}")
 
+
 #
 # Tracker button data
-# Here we're processing the button pressed, the 7th/10th character in the decoded data is the amount of times the main/sub buttons were pressed respectively.
+# Here we're processing the button pressed, the 7th/10th character in the decoded data is the
+# amount of times the main/sub buttons were pressed respectively.
 #
 
-def process_r0_data(data):   
+def process_r0_data(data):
     decoded_data = data.decode('utf-8')
 
     global prev_main_button_press_count, prev_sub_button_press_count
@@ -138,7 +153,8 @@ def process_r0_data(data):
     sub_button_press_count = int(decoded_data[9], 16)  # 10th character (0-indexed)
 
     # This is a pretty janky way to track which button has been pressed, but seems to be the best way right now.
-    # This is due to how the data is received (r1:110060800400), where both the main button (8) and sub button (4) are tracked in the same 12 bits.
+    # This is due to how the data is received (r1:110060800400), where both the main button (8)
+    # and sub button (4) are tracked in the same 12 bits.
     if main_button_press_count != prev_main_button_press_count:
         logging.info(f"Main button pressed. Pressed {main_button_press_count + 1} times.")
         prev_main_button_press_count = main_button_press_count
@@ -148,6 +164,7 @@ def process_r0_data(data):
     else:
         logging.info("No new button press detected.. wait how did this run?")
         logging.info(decoded_data)
+
 
 #
 # Decoding IMU packets
@@ -160,7 +177,8 @@ def decode_imu_packet(data):
         if len(data) < 20:
             raise DecodeError("Too few bytes to decode IMU packet")
 
-        rotation_x, rotation_y, rotation_z, rotation_w, gravity_x, gravity_y, gravity_z = struct.unpack('<hhhhhhh', data[:14])
+        rotation_x, rotation_y, rotation_z, rotation_w, gravity_x, gravity_y, gravity_z = struct.unpack('<hhhhhhh',
+                                                                                                        data[:14])
         rotation = Rotation(
             x=rotation_x / 180.0 * 0.01,
             y=rotation_y / 180.0 * 0.01,
@@ -176,9 +194,10 @@ def decode_imu_packet(data):
     except (struct.error, DecodeError) as e:
         raise DecodeError("Error decoding IMU packet") from e
 
+
 if __name__ == "__main__":
     # Parse command argument(s), if any
-    parser = argparse.ArgumentParser(description='Process the data by the HaritoraX Wireless trackers, from the GX6 Communication Dongle')
+    parser = argparse.ArgumentParser(description='Process the trackers from the GX6 Communication Dongle')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode and log output to a file.')
     args = parser.parse_args()
 
@@ -191,5 +210,5 @@ if __name__ == "__main__":
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logging.getLogger().addHandler(file_handler)
-        
+
     start_server()
