@@ -77,17 +77,15 @@ def process_data(data):
         parts = line.split(b':', 1)
         if len(parts) == 2:
             label, data = parts
-            if b'X' in label:
-                # Tracker button info
+            """if b'X' in label:
+                # IMU tracker data
                 tracker_number = int(label.split(b'X')[-1])
-                process_tracker_data(data, tracker_number)
-            elif label == b'a0':
-                # Other tracker 1 data
-                process_a0_data(data)
-            elif label == b'a1':
-                # Other tracker 2 data
-                process_a1_data(data)
-            elif b'r' in label:
+                process_tracker_data(data, tracker_number)"""
+            if b'a' in label:
+                # Other tracker data
+                tracker_number = int(label.split(b'a')[-1])
+                process_other_tracker_data(data, tracker_number)
+            """elif b'r' in label:
                 # Tracker button info
                 tracker_number = int(label.split(b'r')[-1])
                 process_button_data(data, tracker_number)
@@ -97,7 +95,7 @@ def process_data(data):
                 process_battery_data(data, tracker_number)
             else:
                 logging.info(f"Unknown label: {label}")
-                logging.info(f"Unknown label's data: {data.decode('utf-8')}")
+                logging.info(f"Unknown label's data: {data.decode('utf-8')}")"""
 
 
 #
@@ -120,10 +118,10 @@ def process_tracker_data(data, tracker_num):
             # Other trackers
             try:
                 rotation, gravity = decode_imu_packet(data)
-                logging.info(f'Tracker {tracker_num} rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})')
-                logging.info(f'Tracker {tracker_num} gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+                logging.info(f'Tracker {tracker_num + 1} rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})')
+                logging.info(f'Tracker {tracker_num + 1} gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
             except DecodeError as e:
-                logging.info(f"Error decoding tracker {tracker_num} IMU packet:", e)
+                logging.info(f"Error decoding tracker {tracker_num + 1} IMU packet:", e)
         else:
             # Ankle trackers
             if data and len(data) == 24:
@@ -154,12 +152,12 @@ def process_tracker_data(data, tracker_num):
 # calibration through the software. Also, could be if the tracker is just turned on/off.
 #
 
-def process_a0_data(data):
+def process_other_tracker_data(data, tracker_num):
     decoded_data = data.decode('utf-8')
     if decoded_data.strip() == '7f7f7f7f7f7f':
-        logging.info("Searching for tracker 1...")
+        logging.info(f"Searching for tracker {tracker_num + 1}...")
     else:
-        logging.info(f"Other A0 data processed: {decoded_data}")
+        logging.info(f"Other tracker {tracker_num + 1} data processed: {decoded_data}")
 
 
 def process_a1_data(data):
@@ -215,13 +213,12 @@ def process_button_data(data, tracker_num):
 # Can be used to forward to other software such as SlimeVR's server!
 #
 
-def process_battery_data(data, tracker_id):
+def process_battery_data(data, tracker_num):
     try:
         battery_info = json.loads(data)
-        tracker_number = tracker_id + 1
-        print(f"Tracker {tracker_number} remaining: {battery_info.get('battery remaining')}%")
-        print(f"Tracker {tracker_number} voltage: {battery_info.get('battery voltage')}")
-        print(f"Tracker {tracker_number} Status: {battery_info.get('charge status')}")
+        print(f"Tracker {tracker_num + 1} remaining: {battery_info.get('battery remaining')}%")
+        print(f"Tracker {tracker_num + 1} voltage: {battery_info.get('battery voltage')}")
+        print(f"Tracker {tracker_num + 1} Status: {battery_info.get('charge status')}")
     except JSONDecodeError as e:
         print(f"Error processing battery data: {e}")
 
