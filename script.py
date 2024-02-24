@@ -79,54 +79,114 @@ def process_data(data):
             elif label == b'X1':
                 # Tracker 2 data
                 process_x1_data(data)
-            if label == b'a0':
+            elif label == b'a0':
                 # Other tracker 1 data
                 process_a0_data(data)
             elif label == b'a1':
                 # Other tracker 2 data
                 process_a1_data(data)
-            if label == b'r0':
+            elif label == b'r0':
                 # Button press data
                 process_r0_data(data)
+            else:
+                logging.info(f"Unknown label: {label}")
+                logging.info(f"Unknown label's data: {data.decode('utf-8')}")
 
 
 #
 # Tracker data
-# This is obviously the IMU tracking data, the juicy stuff.
+# This is obviously the IMU tracking data, the juicy stuff. Ankle motion data also included (if enabled).
 # Can be used to forward to other software such as SlimeVR's server!
 # Rotation has: x, y, z, w
 # Gravity has: x, y, z
 #
 
+def process_ankle_motion_data(data):
+    # Process ankle motion data
+    # TODO: see how to process the data, but we have it here
+    logging.info(f"Processing ankle motion data: {data}")
+
+
 def process_x0_data(data):
     try:
-        rotation, gravity = decode_imu_packet(data)
-        logging.info(f'Tracker 1 rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
-        logging.info(f'Tracker 1 gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+        if data[-2:] == b'==' and len(data) == 24:
+            # Other trackers
+            try:
+                rotation, gravity = decode_imu_packet(data)
+                logging.info(f'Tracker 1 rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
+                logging.info(f'Tracker 1 gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+            except DecodeError as e:
+                logging.info("Error decoding tracker 1 IMU packet:", e)
+        else:
+            # Ankle trackers
+            if data and len(data) == 24:
+                decoded_data = data.decode('utf-8')
+
+                ankle_motion_data = decoded_data[-2:]
+                process_ankle_motion_data(ankle_motion_data)
+
+                imu_data = decoded_data[:-2]
+
+                try:
+                    rotation, gravity = decode_imu_packet(imu_data.encode('utf-8'))
+                    logging.info(
+                        f'Tracker 1 IMU data: Rotation ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}), '
+                        f'Gravity ({gravity.x}, {gravity.y}, {gravity.z})')
+                except DecodeError as e:
+                    logging.info(f'Error decoding tracker 1 IMU packet: {decoded_data}')
+            else:
+                logging.info(f"Invalid or short data received. Skipping processing of data: {data}")
+
     except DecodeError as e:
-        logging.info("Error decoding tracker 1 IMU packet:", e)
+        logging.info("Error decoding data:", data)
 
 
 def process_x1_data(data):
     try:
-        rotation, gravity = decode_imu_packet(data)
-        logging.info(f'Tracker 2 Rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
-        logging.info(f'Tracker 2 Gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+        if data[-2:] == b'==' and len(data) == 24:
+            # Other trackers
+            try:
+                rotation, gravity = decode_imu_packet(data)
+                logging.info(f'Tracker 2 rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}')
+                logging.info(f'Tracker 2 gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+            except DecodeError as e:
+                logging.info("Error decoding tracker 2 IMU packet:", e)
+        else:
+            # Ankle trackers
+            if data and len(data) == 24:
+                decoded_data = data.decode('utf-8')
+
+                ankle_motion_data = decoded_data[-2:]
+                process_ankle_motion_data(ankle_motion_data)
+
+                imu_data = decoded_data[:-2]
+
+                try:
+                    rotation, gravity = decode_imu_packet(imu_data.encode('utf-8'))
+                    logging.info(
+                        f'Tracker 2 IMU data: Rotation ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}), '
+                        f'Gravity ({gravity.x}, {gravity.y}, {gravity.z})')
+                except DecodeError as e:
+                    logging.info(f'Error decoding tracker 2 IMU packet: {decoded_data}')
+            else:
+                logging.info(f"Invalid or short data received. Skipping processing of data: {data}")
+
     except DecodeError as e:
-        logging.info("Error decoding tracker 2 IMU packet:", e)
+        logging.info("Error decoding data:", data)
+
 
 
 #
 # Other tracker data
-# Currently unsure what other data a0/a1 could represent other than trying to find the
-# trackers, I see other values for it too. This could also be used to report calibration data when running the
-# calibration through the software. Also, could be if tracker is just turned on/off.
+# Currently unsure what other data a0/a1 could represent other than trying to find the trackers,
+# I see other values for it too. This could also be used to report calibration data when running the
+# calibration through the software. Also, could be if the tracker is just turned on/off.
 #
 
 def process_a0_data(data):
     decoded_data = data.decode('utf-8')
     if decoded_data.strip() == '7f7f7f7f7f7f':
-        logging.info("Searching for tracker 0...")
+        logging.info("Searching for tracker 1...")
     else:
         logging.info(f"Other A0 data processed: {decoded_data}")
 
@@ -134,7 +194,7 @@ def process_a0_data(data):
 def process_a1_data(data):
     decoded_data = data.decode('utf-8')
     if decoded_data.strip() == '7f7f7f7f7f7f':
-        logging.info("Searching for tracker 1...")
+        logging.info("Searching for tracker 2...")
     else:
         logging.info(f"Other A1 data processed: {decoded_data}")
 
@@ -174,7 +234,7 @@ def process_r0_data(data):
 
 def decode_imu_packet(data):
     try:
-        if len(data) < 20:
+        if len(data) < 14:
             raise DecodeError("Too few bytes to decode IMU packet")
 
         rotation_x, rotation_y, rotation_z, rotation_w, gravity_x, gravity_y, gravity_z = struct.unpack('<hhhhhhh',
@@ -185,6 +245,13 @@ def decode_imu_packet(data):
             z=rotation_z / 180.0 * 0.01 * -1.0,
             w=rotation_w / 180.0 * 0.01 * -1.0
         )
+
+        # Check if there's enough data for gravity components
+        if len(data) >= 20:
+            gravity_x, gravity_y, gravity_z = struct.unpack('<hhh', data[14:20])
+        else:
+            gravity_x, gravity_y, gravity_z = 0.0, 0.0, 0.0
+
         gravity = Gravity(
             x=gravity_x / 256.0,
             y=gravity_y / 256.0,
