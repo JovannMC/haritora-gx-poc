@@ -118,10 +118,10 @@ def process_tracker_data(data, tracker_num):
             # Other trackers
             try:
                 rotation, gravity = decode_imu_packet(data)
-                logging.info(f'Tracker {tracker_num + 1} rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})')
-                logging.info(f'Tracker {tracker_num + 1} gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+                logging.info(f'Tracker {tracker_num} rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})')
+                logging.info(f'Tracker {tracker_num} gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
             except DecodeError as e:
-                logging.info(f"Error decoding tracker {tracker_num + 1} IMU packet:", e)
+                logging.info(f"Error decoding tracker {tracker_num} IMU packet:", e)
         else:
             # Ankle trackers
             if data and len(data) == 24:
@@ -155,9 +155,9 @@ def process_tracker_data(data, tracker_num):
 def process_other_tracker_data(data, tracker_num):
     decoded_data = data.decode('utf-8')
     if decoded_data.strip() == '7f7f7f7f7f7f':
-        logging.info(f"Searching for tracker {tracker_num + 1}...")
+        logging.info(f"Searching for tracker {tracker_num}...")
     else:
-        logging.info(f"Other tracker {tracker_num + 1} data processed: {decoded_data}")
+        logging.info(f"Other tracker {tracker_num} data processed: {decoded_data}")
 
 
 def process_a1_data(data):
@@ -177,10 +177,10 @@ def process_a1_data(data):
 def process_button_press(tracker_num, main_button_press_count, sub_button_press_count, prev_main_button_press_count,
                          prev_sub_button_press_count):
     if main_button_press_count != prev_main_button_press_count:
-        logging.info(f"Tracker {tracker_num + 1} main button pressed. Pressed {main_button_press_count + 1} times.")
+        logging.info(f"Tracker {tracker_num} main button pressed. Pressed {main_button_press_count + 1} times.")
         prev_main_button_press_count = main_button_press_count
     if sub_button_press_count != prev_sub_button_press_count:
-        logging.info(f"Tracker {tracker_num + 1} sub button pressed. Pressed {sub_button_press_count + 1} times.")
+        logging.info(f"Tracker {tracker_num} sub button pressed. Pressed {sub_button_press_count + 1} times.")
         prev_sub_button_press_count = sub_button_press_count
     return prev_main_button_press_count, prev_sub_button_press_count
 
@@ -216,9 +216,9 @@ def process_button_data(data, tracker_num):
 def process_battery_data(data, tracker_num):
     try:
         battery_info = json.loads(data)
-        print(f"Tracker {tracker_num + 1} remaining: {battery_info.get('battery remaining')}%")
-        print(f"Tracker {tracker_num + 1} voltage: {battery_info.get('battery voltage')}")
-        print(f"Tracker {tracker_num + 1} Status: {battery_info.get('charge status')}")
+        print(f"Tracker {tracker_num} remaining: {battery_info.get('battery remaining')}%")
+        print(f"Tracker {tracker_num} voltage: {battery_info.get('battery voltage')}")
+        print(f"Tracker {tracker_num} Status: {battery_info.get('charge status')}")
     except JSONDecodeError as e:
         print(f"Error processing battery data: {e}")
 
