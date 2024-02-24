@@ -112,18 +112,22 @@ def process_ankle_motion_data(data):
     logging.info(f"Received ankle motion data: {data}")
 
 
+def log_rotation_and_gravity(tracker_num, rotation, gravity):
+    logging.info(f'Tracker {tracker_num} rotation: '
+                 f'({round(rotation.x, 5)}, {round(rotation.y, 5)}, {round(rotation.z, 5)}, {round(rotation.w, 5)})')
+    logging.info(f'Tracker {tracker_num} gravity: '
+                 f'({round(gravity.x, 5)}, {round(gravity.y, 5)}, {round(gravity.z, 5)})')
+
+
 def process_tracker_data(data, tracker_num):
     try:
         if data[-2:] == b'==' and len(data) == 24:
             # Other trackers
             try:
                 rotation, gravity = decode_imu_packet(data)
-                logging.info(f'Tracker {tracker_num} rotation: '
-                             f'({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})')
-                logging.info(f'Tracker {tracker_num} gravity: '
-                             f'({gravity.x}, {gravity.y}, {gravity.z})')
-            except DecodeError as e:
-                logging.info(f"Error decoding tracker {tracker_num} IMU packet:", e)
+                log_rotation_and_gravity(tracker_num, rotation, gravity)
+            except DecodeError:
+                logging.info(f"Error decoding tracker {tracker_num} IMU packet: {data}")
         else:
             # Ankle trackers
             if data and len(data) == 24:
@@ -136,10 +140,7 @@ def process_tracker_data(data, tracker_num):
 
                 try:
                     rotation, gravity = decode_imu_packet(imu_data.encode('utf-8'))
-                    logging.info(f'Tracker {tracker_num} rotation: '
-                                 f'({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})')
-                    logging.info(f'Tracker {tracker_num} gravity: '
-                                 f'({gravity.x}, {gravity.y}, {gravity.z})')
+                    log_rotation_and_gravity(tracker_num, rotation, gravity)
                 except DecodeError:
                     logging.info(f'Error decoding tracker {tracker_num} IMU packet: {decoded_data}')
             else:
