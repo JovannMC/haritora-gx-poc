@@ -1,7 +1,7 @@
 # haritora-gx6-poc
 People wanted a way to communicate with the GX6 Communication Dongle for the HaritoraX Wireless trackers, so after a couple days of work here is a proof-of-concept script that does just that!<br>
 
-![Showcase of the script, showing the interpreted IMU tracking data from the dongle for tracker 1](showcase.png)
+![Showcase of the script, showing the interpreted IMU tracking data from the dongle for tracker 0](showcase.png)
 
 ## Description
 The [SlimeTora](https://github.com/OCSYT/SlimeTora) project allows you to connect the HaritoraX Wireless trackers to the SlimeVR server software, which many people found to be more stable. Unfortunately it only supported Bluetooth with people who use the GX6 Communication Dongle left out.. until now.*
@@ -33,17 +33,14 @@ When first opening a connection to the serial port, the software reports the don
 
 ![USBLogView window showing a "Generic USB Hub" and three "USB Serial Devices" plugged in](usblogview.png)
 
-Examples for values of each label I found:
+Examples for values of each label I found (usually for tracker 0):
 - `i:{"version":"1.0.19","model":"GX6","serial no":"SERIAL"}` - dongle firmware version, model, and serial
 - `o0:00000110107000` - unknown, reported after `i`
-- `o1:00000110107000` - unknown, reported after `i`
 - `o:3050` - unknown, reported after `i`
-- `a0:7f7f7f7f7f7f` - searching for/unable to find tracker 1
-- `a1:7f7f7f7f7f7f` - searching for/unable to find tracker 2
+- `a0:7f7f7f7f7f7f` - searching for/unable to find tracker 0
 - `v0:{"battery voltage":4107,"battery remaining":94,"charge status":"Discharging"}` - battery voltage, percentage remaining, and status
-- `X0:0Ayb3u7+DzWeBxoDVQMAAA==` - raw IMU tracking data for tracker 1, encoded in base64. The last two bits represent the ankle motion data, `==` means nothing (not an ankle tracker)
-- `X1:RAJ95/72YjrkBo4BGQcCAA==` - raw IMU tracking data for tracker 2, encoded in base64. The last two bits represent the ankle motion data, `==` means nothing (not an ankle tracker)
-- `r0:110060800a00` -  - raw IMU button data - main button pressed 7 times, sub button pressed 9 times (0-indexed, a = 10 in hex)
+- `X0:0Ayb3u7+DzWeBxoDVQMAAA==` - raw IMU tracking data for tracker 0, encoded in base64. The last two bits represent the ankle motion data, `==` means nothing (not an ankle tracker)
+- `r0:110060800a00` -  - raw IMU button data for tracker 0 - main button pressed 7 times, sub button pressed 9 times (0-indexed, a = 10 in hex)
 
 Right now o/o0/o1 are unknown and I believe a0/a1 could also be used to provide calibration data to the software. **Any help is appreciated!**
 
