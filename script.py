@@ -77,15 +77,15 @@ def process_data(data):
         parts = line.split(b':', 1)
         if len(parts) == 2:
             label, data = parts
-            """if b'X' in label:
+            if b'X' in label:
                 # IMU tracker data
                 tracker_number = int(label.split(b'X')[-1])
-                process_tracker_data(data, tracker_number)"""
-            if b'a' in label:
+                process_tracker_data(data, tracker_number)
+            elif b'a' in label:
                 # Other tracker data
                 tracker_number = int(label.split(b'a')[-1])
                 process_other_tracker_data(data, tracker_number)
-            """elif b'r' in label:
+            elif b'r' in label:
                 # Tracker button info
                 tracker_number = int(label.split(b'r')[-1])
                 process_button_data(data, tracker_number)
@@ -95,7 +95,7 @@ def process_data(data):
                 process_battery_data(data, tracker_number)
             else:
                 logging.info(f"Unknown label: {label}")
-                logging.info(f"Unknown label's data: {data.decode('utf-8')}")"""
+                logging.info(f"Unknown label's data: {data.decode('utf-8')}")
 
 
 #
@@ -109,7 +109,7 @@ def process_data(data):
 def process_ankle_motion_data(data):
     # Process ankle motion data
     # TODO: see how to process the data, but we have it here
-    logging.info(f"Processing ankle motion data: {data}")
+    logging.info(f"Received ankle motion data: {data}")
 
 
 def process_tracker_data(data, tracker_num):
