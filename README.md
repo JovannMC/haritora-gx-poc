@@ -13,7 +13,8 @@ This project allows you to interface with the **GX6 Communication Dongle** to gr
 ## Features
 - Interpret the IMU's tracking data
 - Interpret trackers' buttons - detect which button was pressed and how many times
-- Interpret battery status of trackers (when turning on tracker w/ script on)
+- Get raw ankle tracking IR data (no math yet to be interpreted)
+- Get battery info of trackers (when turning on tracker w/ script on)
 - Debug mode - print out raw data and print to a log file
 
 ## Todo
@@ -40,8 +41,8 @@ Examples for values of each label I found:
 - `a0:7f7f7f7f7f7f` - searching for/unable to find tracker 1
 - `a1:7f7f7f7f7f7f` - searching for/unable to find tracker 2
 - `v0:{"battery voltage":4107,"battery remaining":94,"charge status":"Discharging"}` - battery voltage, percentage remaining, and status
-- `X0:0Ayb3u7+DzWeBxoDVQMAAA==` - raw IMU tracking data for tracker 1, encoded in base64
-- `X1:RAJ95/72YjrkBo4BGQcCAA==` - raw IMU tracking data for tracker 2, encoded in base64
+- `X0:0Ayb3u7+DzWeBxoDVQMAAA==` - raw IMU tracking data for tracker 1, encoded in base64. The last two bits represent the ankle motion data, `==` means nothing (not an ankle tracker)
+- `X1:RAJ95/72YjrkBo4BGQcCAA==` - raw IMU tracking data for tracker 2, encoded in base64. The last two bits represent the ankle motion data, `==` means nothing (not an ankle tracker)
 - `r0:110060800a00` -  - raw IMU button data - main button pressed 7 times, sub button pressed 9 times (0-indexed, a = 10 in hex)
 
 Right now o/o0/o1 are unknown and I believe a0/a1 could also be used to provide calibration data to the software. **Any help is appreciated!**
