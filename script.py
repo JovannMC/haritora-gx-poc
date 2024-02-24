@@ -160,14 +160,6 @@ def process_other_tracker_data(data, tracker_num):
         logging.info(f"Other tracker {tracker_num} data processed: {decoded_data}")
 
 
-def process_a1_data(data):
-    decoded_data = data.decode('utf-8')
-    if decoded_data.strip() == '7f7f7f7f7f7f':
-        logging.info("Searching for tracker 2...")
-    else:
-        logging.info(f"Other A1 data processed: {decoded_data}")
-
-
 #
 # Tracker button data
 # Here we're processing the button pressed, the 7th/10th character in the decoded data is the
