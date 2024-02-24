@@ -5,6 +5,8 @@ import socket
 import struct
 import argparse
 import logging
+import json
+from json.decoder import JSONDecodeError
 from datetime import datetime
 
 # Initialize logger and debug mode variable
@@ -16,8 +18,10 @@ HOST = '127.0.0.1'
 PORT = 9876
 
 # There's gotta be a better way to do this. Read below for more info.
-prev_main_button_press_count = 0
-prev_sub_button_press_count = 0
+r0_prev_main_button_press_count = 0
+r0_prev_sub_button_press_count = 0
+r1_prev_main_button_press_count = 0
+r1_prev_sub_button_press_count = 0
 
 
 class DecodeError(Exception):
@@ -73,7 +77,7 @@ def process_data(data):
         parts = line.split(b':', 1)
         if len(parts) == 2:
             label, data = parts
-            if label == b'X0':
+            """if label == b'X0':
                 # Tracker 1 data
                 process_x0_data(data)
             elif label == b'X1':
@@ -84,17 +88,18 @@ def process_data(data):
                 process_a0_data(data)
             elif label == b'a1':
                 # Other tracker 2 data
-                process_a1_data(data)
-            elif label == b'r0':
-                # Button press data
-                process_r0_data(data)
+                process_a1_data(data)"""
+            if b'r' in label:
+                # Tracker button info
+                tracker_number = int(label.split(b'r')[-1])
+                process_r_data(data, tracker_number)
             elif b'v' in label:
                 # Tracker battery info
                 tracker_number = int(label.split(b'v')[-1])
                 process_battery_data(data, tracker_number)
-            else:
+            """else:
                 logging.info(f"Unknown label: {label}")
-                logging.info(f"Unknown label's data: {data.decode('utf-8')}")
+                logging.info(f"Unknown label's data: {data.decode('utf-8')}")"""
 
 
 #
@@ -179,7 +184,6 @@ def process_x1_data(data):
         logging.info("Error decoding data:", data)
 
 
-
 #
 # Other tracker data
 # Currently unsure what other data a0/a1 could represent other than trying to find the trackers,
@@ -209,25 +213,42 @@ def process_a1_data(data):
 # amount of times the main/sub buttons were pressed respectively.
 #
 
-def process_r0_data(data):
+def process_r_data(data, tracker_num):
     decoded_data = data.decode('utf-8')
 
-    global prev_main_button_press_count, prev_sub_button_press_count
-    main_button_press_count = int(decoded_data[6], 16)  # 7th character (0-indexed)
-    sub_button_press_count = int(decoded_data[9], 16)  # 10th character (0-indexed)
+    if tracker_num == 0:
+        global r0_prev_main_button_press_count, r0_prev_sub_button_press_count
+        main_button_press_count = int(decoded_data[6], 16)  # 7th character (0-indexed)
+        sub_button_press_count = int(decoded_data[9], 16)  # 10th character (0-indexed)
 
-    # This is a pretty janky way to track which button has been pressed, but seems to be the best way right now.
-    # This is due to how the data is received (r1:110060800400), where both the main button (8)
-    # and sub button (4) are tracked in the same 12 bits.
-    if main_button_press_count != prev_main_button_press_count:
-        logging.info(f"Main button pressed. Pressed {main_button_press_count + 1} times.")
-        prev_main_button_press_count = main_button_press_count
-    elif sub_button_press_count != prev_sub_button_press_count:
-        logging.info(f"Sub button pressed. Pressed {sub_button_press_count + 1} times.")
-        prev_sub_button_press_count = sub_button_press_count
-    else:
-        logging.info("No new button press detected.. wait how did this run?")
-        logging.info(decoded_data)
+        print(f"Main: {main_button_press_count}")
+        print(f"Sub: {sub_button_press_count}")
+
+        if main_button_press_count != r0_prev_sub_button_press_count:
+            print(1)
+            logging.info(f"Tracker 1 main button pressed. Pressed {main_button_press_count + 1} times.")
+            r0_prev_main_button_press_count = main_button_press_count
+        elif sub_button_press_count != r0_prev_sub_button_press_count:
+            print(2)
+            logging.info(f"Tracker 1 sub button pressed. Pressed {sub_button_press_count + 1} times.")
+            r0_prev_sub_button_press_count = sub_button_press_count
+        else:
+            logging.info(f"Tracker 1 no new button press detected.. wait how did this run?")
+            logging.info(decoded_data)
+    elif tracker_num == 1:
+        global r1_prev_main_button_press_count, r1_prev_sub_button_press_count
+        main_button_press_count = int(decoded_data[6], 16)  # 7th character (0-indexed)
+        sub_button_press_count = int(decoded_data[9], 16)  # 10th character (0-indexed)
+
+        if main_button_press_count != r1_prev_sub_button_press_count:
+            logging.info(f"Tracker 1 main button pressed. Pressed {main_button_press_count + 1} times.")
+            r1_prev_main_button_press_count = main_button_press_count
+        elif sub_button_press_count != r1_prev_sub_button_press_count:
+            logging.info(f"Tracker 2 sub button pressed. Pressed {sub_button_press_count + 1} times.")
+            r1_prev_sub_button_press_count = sub_button_press_count
+        else:
+            logging.info(f"Tracker 2 no new button press detected.. wait how did this run?")
+            logging.info(decoded_data)
 
 
 #
