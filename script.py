@@ -141,12 +141,12 @@ def process_x0_data(data):
                     logging.info(
                         f'Tracker 1 IMU data: Rotation ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}), '
                         f'Gravity ({gravity.x}, {gravity.y}, {gravity.z})')
-                except DecodeError as e:
+                except DecodeError:
                     logging.info(f'Error decoding tracker 1 IMU packet: {decoded_data}')
             else:
                 logging.info(f"Invalid or short data received. Skipping processing of data: {data}")
 
-    except DecodeError as e:
+    except DecodeError:
         logging.info("Error decoding data:", data)
 
 
@@ -175,12 +175,12 @@ def process_x1_data(data):
                     logging.info(
                         f'Tracker 2 IMU data: Rotation ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w}), '
                         f'Gravity ({gravity.x}, {gravity.y}, {gravity.z})')
-                except DecodeError as e:
+                except DecodeError:
                     logging.info(f'Error decoding tracker 2 IMU packet: {decoded_data}')
             else:
                 logging.info(f"Invalid or short data received. Skipping processing of data: {data}")
 
-    except DecodeError as e:
+    except DecodeError:
         logging.info("Error decoding data:", data)
 
 
@@ -213,6 +213,17 @@ def process_a1_data(data):
 # amount of times the main/sub buttons were pressed respectively.
 #
 
+def process_button_press(tracker_num, main_button_press_count, sub_button_press_count, prev_main_button_press_count,
+                         prev_sub_button_press_count):
+    if main_button_press_count != prev_main_button_press_count:
+        logging.info(f"Tracker {tracker_num + 1} main button pressed. Pressed {main_button_press_count + 1} times.")
+        prev_main_button_press_count = main_button_press_count
+    if sub_button_press_count != prev_sub_button_press_count:
+        logging.info(f"Tracker {tracker_num + 1} sub button pressed. Pressed {sub_button_press_count + 1} times.")
+        prev_sub_button_press_count = sub_button_press_count
+    return prev_main_button_press_count, prev_sub_button_press_count
+
+
 def process_r_data(data, tracker_num):
     decoded_data = data.decode('utf-8')
 
@@ -221,34 +232,18 @@ def process_r_data(data, tracker_num):
         main_button_press_count = int(decoded_data[6], 16)  # 7th character (0-indexed)
         sub_button_press_count = int(decoded_data[9], 16)  # 10th character (0-indexed)
 
-        print(f"Main: {main_button_press_count}")
-        print(f"Sub: {sub_button_press_count}")
+        r0_prev_main_button_press_count, r0_prev_sub_button_press_count = process_button_press(
+            tracker_num, main_button_press_count, sub_button_press_count, r0_prev_main_button_press_count,
+            r0_prev_sub_button_press_count)
 
-        if main_button_press_count != r0_prev_sub_button_press_count:
-            print(1)
-            logging.info(f"Tracker 1 main button pressed. Pressed {main_button_press_count + 1} times.")
-            r0_prev_main_button_press_count = main_button_press_count
-        elif sub_button_press_count != r0_prev_sub_button_press_count:
-            print(2)
-            logging.info(f"Tracker 1 sub button pressed. Pressed {sub_button_press_count + 1} times.")
-            r0_prev_sub_button_press_count = sub_button_press_count
-        else:
-            logging.info(f"Tracker 1 no new button press detected.. wait how did this run?")
-            logging.info(decoded_data)
     elif tracker_num == 1:
         global r1_prev_main_button_press_count, r1_prev_sub_button_press_count
         main_button_press_count = int(decoded_data[6], 16)  # 7th character (0-indexed)
         sub_button_press_count = int(decoded_data[9], 16)  # 10th character (0-indexed)
 
-        if main_button_press_count != r1_prev_sub_button_press_count:
-            logging.info(f"Tracker 1 main button pressed. Pressed {main_button_press_count + 1} times.")
-            r1_prev_main_button_press_count = main_button_press_count
-        elif sub_button_press_count != r1_prev_sub_button_press_count:
-            logging.info(f"Tracker 2 sub button pressed. Pressed {sub_button_press_count + 1} times.")
-            r1_prev_sub_button_press_count = sub_button_press_count
-        else:
-            logging.info(f"Tracker 2 no new button press detected.. wait how did this run?")
-            logging.info(decoded_data)
+        r1_prev_main_button_press_count, r1_prev_sub_button_press_count = process_button_press(
+            tracker_num, main_button_press_count, sub_button_press_count, r1_prev_main_button_press_count,
+            r1_prev_sub_button_press_count)
 
 
 #
@@ -257,14 +252,14 @@ def process_r_data(data, tracker_num):
 # Can be used to forward to other software such as SlimeVR's server!
 #
 
-def process_battery_data(data, id):
+def process_battery_data(data, tracker_id):
     try:
         battery_info = json.loads(data)
-        tracker_number = id + 1
+        tracker_number = tracker_id + 1
         print(f"Tracker {tracker_number} remaining: {battery_info.get('battery remaining')}%")
         print(f"Tracker {tracker_number} voltage: {battery_info.get('battery voltage')}")
         print(f"Tracker {tracker_number} Status: {battery_info.get('charge status')}")
-    except json.JSONDecodeError as e:
+    except JSONDecodeError as e:
         print(f"Error processing battery data: {e}")
 
 
