@@ -88,6 +88,10 @@ def process_data(data):
             elif label == b'r0':
                 # Button press data
                 process_r0_data(data)
+            elif b'v' in label:
+                # Tracker battery info
+                tracker_number = int(label.split(b'v')[-1])
+                process_battery_data(data, tracker_number)
             else:
                 logging.info(f"Unknown label: {label}")
                 logging.info(f"Unknown label's data: {data.decode('utf-8')}")
@@ -224,6 +228,23 @@ def process_r0_data(data):
     else:
         logging.info("No new button press detected.. wait how did this run?")
         logging.info(decoded_data)
+
+
+#
+# Tracker battery info
+# This contains the information about of the
+# Can be used to forward to other software such as SlimeVR's server!
+#
+
+def process_battery_data(data, id):
+    try:
+        battery_info = json.loads(data)
+        tracker_number = id + 1
+        print(f"Tracker {tracker_number} remaining: {battery_info.get('battery remaining')}%")
+        print(f"Tracker {tracker_number} voltage: {battery_info.get('battery voltage')}")
+        print(f"Tracker {tracker_number} Status: {battery_info.get('charge status')}")
+    except json.JSONDecodeError as e:
+        print(f"Error processing battery data: {e}")
 
 
 #
