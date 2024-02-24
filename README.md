@@ -38,7 +38,7 @@ Examples for values of each label I found (usually for tracker 0):
 - `o0:00000110107000` - unknown, reported after `i`
 - `o:3050` - unknown, reported after `i`
 - `a0:7f7f7f7f7f7f` - searching for/unable to find tracker 0
-- `v0:{"battery voltage":4107,"battery remaining":94,"charge status":"Discharging"}` - battery voltage, percentage remaining, and status
+- `v0:{"battery voltage":4107,"battery remaining":94,"charge status":"Discharging"}` - battery voltage, percentage remaining, and status for tracker 0
 - `X0:0Ayb3u7+DzWeBxoDVQMAAA==` - raw IMU tracking data for tracker 0, encoded in base64. The last two bits represent the ankle motion data, `==` means nothing (not an ankle tracker)
 - `r0:110060800a00` -  - raw IMU button data for tracker 0 - main button pressed 7 times, sub button pressed 9 times (0-indexed, a = 10 in hex)
 
