@@ -118,8 +118,10 @@ def process_tracker_data(data, tracker_num):
             # Other trackers
             try:
                 rotation, gravity = decode_imu_packet(data)
-                logging.info(f'Tracker {tracker_num} rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})')
-                logging.info(f'Tracker {tracker_num} gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+                logging.info(f'Tracker {tracker_num} rotation: '
+                             f'({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})')
+                logging.info(f'Tracker {tracker_num} gravity: '
+                             f'({gravity.x}, {gravity.y}, {gravity.z})')
             except DecodeError as e:
                 logging.info(f"Error decoding tracker {tracker_num} IMU packet:", e)
         else:
@@ -134,8 +136,10 @@ def process_tracker_data(data, tracker_num):
 
                 try:
                     rotation, gravity = decode_imu_packet(imu_data.encode('utf-8'))
-                    logging.info(f'Tracker {tracker_num} rotation: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})')
-                    logging.info(f'Tracker {tracker_num} gravity: ({gravity.x}, {gravity.y}, {gravity.z})')
+                    logging.info(f'Tracker {tracker_num} rotation: '
+                                 f'({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})')
+                    logging.info(f'Tracker {tracker_num} gravity: '
+                                 f'({gravity.x}, {gravity.y}, {gravity.z})')
                 except DecodeError:
                     logging.info(f'Error decoding tracker {tracker_num} IMU packet: {decoded_data}')
             else:
