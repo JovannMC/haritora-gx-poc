@@ -1,6 +1,8 @@
 # Hey welcome to the project, by JovannMC (and a bit too much of ChatGPT)
 # I would recommend using a program like RealTerm to capture the serial data, and then "echo" the data to the server.
 
+# TODO: add new info (settings) to script
+
 import socket
 import struct
 import argparse
