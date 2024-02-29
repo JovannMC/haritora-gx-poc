@@ -258,11 +258,10 @@ def process_battery_data(data, tracker_num, port_name):
 def process_tracker_settings(data, tracker_num, port_name):
     # Check readme.md for info 
     # Example data: o0:00000110106000
-    binary_data = bin(int(data, 16))[2:].zfill(16)
 
     sensor_mode = int(binary_data[6])
-    posture_data_rate = int(binary_data[4])
-    sensor_auto_correction = int(binary_data[2])
+    posture_data_rate = int(binary_data[5])
+    sensor_auto_correction = int(binary_data[10])
 
     sensor_mode_text = "Mode 1" if sensor_mode == 0 else "Mode 2"
     posture_data_rate_text = "50FPS" if posture_data_rate == 0 else "100FPS"

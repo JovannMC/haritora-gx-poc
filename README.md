@@ -33,12 +33,12 @@ When first opening a connection to the serial port, the software reports the don
 
 To set the settings on the tracker, we see `o0` and `o1` being used. It used 14 bits and certain bits are used to represent a setting which are as follows:
 
+- Posture data transfer rate - bit 6
+  - 50FPS = 0
+  - 100FPS = 1
 - Sensor mode - bit 7
   - Mode 1 = 0
   - Mode 2 = 1
-- Posture data transfer rate - bit 9
-  - 50FPS = 0
-  - 100FPS = 1
 - Sensor auto correction - bit 11
   - Accel(erometer) = 1
   - Gyro(scope) = 2
@@ -53,7 +53,7 @@ To set the settings on the tracker, we see `o0` and `o1` being used. It used 14 
 Examples for values of each label I found (all mostly for tracker 0, however same thing for tracker 1):
 - `i:{"version":"1.0.19","model":"GX6","serial no":"SERIAL"}` - dongle firmware version, model, and serial
 - `i0:{"version":"1.0.22","model":"mc3s","serial no":"SERIAL"}` - tracker firmware version, model, and serial
-- `o0:00000110107000` - the settings for the tracker. sensor mode 2, 100 fps, accel+gyro+mag sensor auto correction, and ankle motion detection disabled
+- `o0:00000110107000` - the settings for the tracker. 100fps, sensor mode 2, accel+gyro+mag sensor auto correction, and ankle motion detection disabled
 - `o:3050` - unknown, reported after `i`
 - `a0:7f7f7f7f7f7f` - searching for/unable to find tracker 0
 - `v0:{"battery voltage":4107,"battery remaining":94,"charge status":"Discharging"}` - battery voltage, percentage remaining, and status for tracker 0
