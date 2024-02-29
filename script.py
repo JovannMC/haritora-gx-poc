@@ -8,6 +8,7 @@ import argparse
 import logging
 import json
 import serial
+import asyncio
 from json.decoder import JSONDecodeError
 from datetime import datetime
 
@@ -16,7 +17,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 debug_mode = False
 
 port_names = ['COM4', 'COM5', 'COM6']
-baud_rate = 9600  # Adjust the baud rate as per your device settings
+baud_rate = 500000  # Found in haritora_setting.json in HaritoraConfigurator
 
 # There's gotta be a better way to do this. Read below for more info.
 r0_prev_main_button_press_count = 0
@@ -47,26 +48,26 @@ class Gravity:
 #   Serial port communication stuff
 #
 
-def start_serial_communication():
-    for port_name in port_names:
-        try:
-            ser = serial.Serial(port_name, baud_rate, timeout=1)
-            print(f"Serial port {port_name} opened.")
+async def start_serial_communication(port_name):
+    print("trying to open port ", port_name)
+    try:
+        ser = serial.Serial(port_name, baud_rate, timeout=1)
+        logging.info(f"{port_name} - Serial port {port_name} opened.")
 
-            while True:
-                data = ser.readline().strip()
-                if data:
-                    process_data(data)
+        while True:
+            data = ser.readline().strip()
+            if data:
+                process_data(data, port_name)
 
-            ser.close()
-        except serial.SerialException as e:
-            print(f"Error opening serial port {port_name}: {str(e)}")
+        ser.close()
+    except serial.SerialException as e:
+        logging.info(f"{port_name} - Error opening serial port {port_name}: {str(e)}")
 
-def process_data(data):
+def process_data(data, port_name):
     lines = data.strip().split(b'\n')
     if debug_mode:
         # Print raw data received by server
-        logging.debug(f"Processed lines: {lines}")
+        logging.debug(f"{port_name} - Processed lines: {lines}")
     for line in lines:
         parts = line.split(b':', 1)
         if len(parts) == 2:
@@ -78,7 +79,7 @@ def process_data(data):
                     tracker_number = int(tracker_number)
                 else:
                     tracker_number = -1
-                process_tracker_data(data, tracker_number)
+                process_tracker_data(data, tracker_number, port_name)
             elif b'a' in label:
                 # Other tracker data
                 tracker_number = label.split(b'a')[-1]
@@ -86,7 +87,15 @@ def process_data(data):
                     tracker_number = int(tracker_number)
                 else:
                     tracker_number = -1
-                process_other_tracker_data(data, tracker_number)
+                process_other_tracker_data(data, tracker_number, port_name)
+            elif b'o' in label:
+                # Tracker settings
+                tracker_number = label.split(b'v')[-1]
+                if tracker_number.isdigit():
+                    tracker_number = int(tracker_number)
+                else:
+                    tracker_number = -1
+                process_tracker_settings(data, tracker_number, port_name)
             elif b'r' in label:
                 # Tracker button info
                 tracker_number = label.split(b'r')[-1]
@@ -94,7 +103,7 @@ def process_data(data):
                     tracker_number = int(tracker_number)
                 else:
                     tracker_number = -1
-                process_button_data(data, tracker_number)
+                process_button_data(data, tracker_number, port_name)
             elif b'i' in label:
                 # Dongle/tracker info
                 tracker_number = label.split(b'v')[-1]
@@ -102,7 +111,7 @@ def process_data(data):
                     tracker_number = int(tracker_number)
                 else:
                     tracker_number = -1
-                process_battery_data(data, tracker_number)
+                process_battery_data(data, tracker_number, port_name)
             elif b'v' in label:
                 # Tracker battery info
                 tracker_number = label.split(b'v')[-1]
@@ -110,10 +119,10 @@ def process_data(data):
                     tracker_number = int(tracker_number)
                 else:
                     tracker_number = -1
-                process_battery_data(data, tracker_number)
+                process_battery_data(data, tracker_number, port_name)
             else:
-                logging.info(f"Unknown label: {label}")
-                logging.info(f"Unknown label's data: {data.decode('utf-8')}")
+                logging.info(f"{port_name} - Unknown label: {label}")
+                logging.info(f"{port_name} - Unknown label's data: {data.decode('utf-8')}")
 
 
 #
@@ -124,29 +133,29 @@ def process_data(data):
 # Gravity has: x, y, z
 #
 
-def process_ankle_motion_data(data, tracker_num):
+def process_ankle_motion_data(data, tracker_num, port_name):
     # Process ankle motion data
     # TODO: see how to process the data, but we have it here
-    logging.info(f"Received ankle motion data: {data}")
+    logging.info(f"{port_name} - Received ankle motion data: {data}")
 
 
-def log_rotation_and_gravity(tracker_num, rotation, gravity):
-    logging.info(f'Tracker {tracker_num} rotation: '
+def log_rotation_and_gravity(tracker_num, rotation, gravity, port_name):
+    logging.info(f'{port_name} - Tracker {tracker_num} rotation: '
                  f'({round(rotation.x, 5)}, {round(rotation.y, 5)}, {round(rotation.z, 5)}, {round(rotation.w, 5)})')
-    logging.info(f'Tracker {tracker_num} gravity: '
+    logging.info(f'{port_name} - Tracker {tracker_num} gravity: '
                  f'({round(gravity.x, 5)}, {round(gravity.y, 5)}, {round(gravity.z, 5)})')
 
 
-def process_tracker_data(data, tracker_num):
+def process_tracker_data(data, tracker_num, port_name):
     if tracker_num == -1: return
     try:
         if data[-2:] == b'==' and len(data) == 24:
             # Other trackers
             try:
-                rotation, gravity = decode_imu_packet(data)
-                log_rotation_and_gravity(tracker_num, rotation, gravity)
+                rotation, gravity = decode_imu_packet(data, port_name)
+                log_rotation_and_gravity(tracker_num, rotation, gravity, port_name)
             except DecodeError:
-                logging.info(f"Error decoding tracker {tracker_num} IMU packet: {data}")
+                logging.info(f"{port_name} - Error decoding tracker {tracker_num} IMU packet: {data}")
         else:
             # Ankle trackers
             if data and len(data) == 24:
@@ -158,15 +167,15 @@ def process_tracker_data(data, tracker_num):
                 imu_data = decoded_data[:-2]
 
                 try:
-                    rotation, gravity = decode_imu_packet(imu_data.encode('utf-8'))
+                    rotation, gravity = decode_imu_packet(imu_data.encode('utf-8'), port_name)
                     log_rotation_and_gravity(tracker_num, rotation, gravity)
                 except DecodeError:
-                    logging.info(f'Error decoding tracker {tracker_num} IMU packet: {decoded_data}')
+                    logging.info(f'{port_name} - Error decoding tracker {tracker_num} IMU packet: {decoded_data}')
             else:
-                logging.info(f"Invalid or short data received. Skipping processing of data: {data}")
+                logging.info(f"{port_name} - Invalid or short data received. Skipping processing of data: {data}")
 
     except DecodeError:
-        logging.info("Error decoding data:", data)
+        logging.info(f"{port_name} - Error decoding data: {data}")
 
 
 #
@@ -176,13 +185,13 @@ def process_tracker_data(data, tracker_num):
 # calibration through the software. Also, could be if the tracker is just turned on/off.
 #
 
-def process_other_tracker_data(data, tracker_num):
+def process_other_tracker_data(data, tracker_num, port_name):
     if tracker_num == -1: return
     decoded_data = data.decode('utf-8')
     if decoded_data.strip() == '7f7f7f7f7f7f':
-        logging.info(f"Searching for tracker {tracker_num}...")
+        logging.info(f"{port_name} - Searching for tracker {tracker_num}...")
     else:
-        logging.info(f"Other tracker {tracker_num} data processed: {decoded_data}")
+        logging.info(f"{port_name} - Other tracker {tracker_num} data processed: {decoded_data}")
 
 
 #
@@ -192,17 +201,17 @@ def process_other_tracker_data(data, tracker_num):
 #
 
 def process_button_press(tracker_num, main_button_press_count, sub_button_press_count, prev_main_button_press_count,
-                         prev_sub_button_press_count):
+                         prev_sub_button_press_count, port_name):
     if main_button_press_count != prev_main_button_press_count:
-        logging.info(f"Tracker {tracker_num} main button pressed. Pressed {main_button_press_count + 1} times.")
+        logging.info(f"{port_name} - Tracker {tracker_num} main button pressed. Pressed {main_button_press_count + 1} times.")
         prev_main_button_press_count = main_button_press_count
     if sub_button_press_count != prev_sub_button_press_count:
-        logging.info(f"Tracker {tracker_num} sub button pressed. Pressed {sub_button_press_count + 1} times.")
+        logging.info(f"{port_name} - Tracker {tracker_num} sub button pressed. Pressed {sub_button_press_count + 1} times.")
         prev_sub_button_press_count = sub_button_press_count
     return prev_main_button_press_count, prev_sub_button_press_count
 
 
-def process_button_data(data, tracker_num):
+def process_button_data(data, tracker_num, port_name):
     if tracker_num == -1: return
     decoded_data = data.decode('utf-8')
 
@@ -213,7 +222,7 @@ def process_button_data(data, tracker_num):
 
         r0_prev_main_button_press_count, r0_prev_sub_button_press_count = process_button_press(
             tracker_num, main_button_press_count, sub_button_press_count, r0_prev_main_button_press_count,
-            r0_prev_sub_button_press_count)
+            r0_prev_sub_button_press_count, port_name)
 
     elif tracker_num == 1:
         global r1_prev_main_button_press_count, r1_prev_sub_button_press_count
@@ -222,7 +231,7 @@ def process_button_data(data, tracker_num):
 
         r1_prev_main_button_press_count, r1_prev_sub_button_press_count = process_button_press(
             tracker_num, main_button_press_count, sub_button_press_count, r1_prev_main_button_press_count,
-            r1_prev_sub_button_press_count)
+            r1_prev_sub_button_press_count, port_name)
 
 
 #
@@ -231,15 +240,49 @@ def process_button_data(data, tracker_num):
 # Can be used to forward to other software such as SlimeVR's server!
 #
 
-def process_battery_data(data, tracker_num):
+def process_battery_data(data, tracker_num, port_name):
     if tracker_num == -1: return
     try:
         battery_info = json.loads(data)
-        print(f"Tracker {tracker_num} remaining: {battery_info.get('battery remaining')}%")
-        print(f"Tracker {tracker_num} voltage: {battery_info.get('battery voltage')}")
-        print(f"Tracker {tracker_num} Status: {battery_info.get('charge status')}")
+        logging.info(f"{port_name} - Tracker {tracker_num} remaining: {battery_info.get('battery remaining')}%")
+        logging.info(f"{port_name} - Tracker {tracker_num} voltage: {battery_info.get('battery voltage')}")
+        logging.info(f"{port_name} - Tracker {tracker_num} Status: {battery_info.get('charge status')}")
     except JSONDecodeError as e:
-        print(f"Error processing battery data: {e}")
+        logging.info(f"{port_name} - Error processing battery data: {e}")
+
+
+#
+# Tracker settings
+# This contains info about the current settings of the tracker
+#
+
+def process_tracker_settings(data, tracker_num, port_name):
+    # Check readme.md for info 
+    # Example data: o0:00000110106000
+    binary_data = bin(int(data, 16))[2:].zfill(16)
+
+    sensor_mode = int(binary_data[6])
+    posture_data_rate = int(binary_data[4])
+    sensor_auto_correction = int(binary_data[2])
+
+    sensor_mode_text = "Mode 1" if sensor_mode == 0 else "Mode 2"
+    posture_data_rate_text = "50FPS" if posture_data_rate == 0 else "100FPS"
+
+    sensor_auto_correction_components = []
+    if sensor_auto_correction & 1:
+        sensor_auto_correction_components.append("Accel")
+    if sensor_auto_correction & 2:
+        sensor_auto_correction_components.append("Gyro")
+    if sensor_auto_correction & 4:
+        sensor_auto_correction_components.append("Mag")
+
+    sensor_auto_correction_text = ', '.join(sensor_auto_correction_components)
+
+    # Print friendly message about the settings
+    logging.info(f"{port_name} - Tracker {tracker_num} settings:")
+    logging.info(f"{port_name} - Sensor Mode: {sensor_mode_text}")
+    logging.info(f"{port_name} - Posture Data Transfer Rate: {posture_data_rate_text}")
+    logging.info(f"{port_name} - Sensor Auto Correction: {sensor_auto_correction_text}")
 
 
 #
@@ -248,10 +291,10 @@ def process_battery_data(data, tracker_num):
 # https://github.com/sim1222/haritorax-slimevr-bridge/
 #
 
-def decode_imu_packet(data):
+def decode_imu_packet(data, port_name):
     try:
         if len(data) < 14:
-            raise DecodeError("Too few bytes to decode IMU packet")
+            raise DecodeError(f"{port_name} - Too few bytes to decode IMU packet")
 
         rotation_x, rotation_y, rotation_z, rotation_w, gravity_x, gravity_y, gravity_z = struct.unpack('<hhhhhhh',
                                                                                                         data[:14])
@@ -275,7 +318,7 @@ def decode_imu_packet(data):
         )
         return rotation, gravity
     except (struct.error, DecodeError) as e:
-        raise DecodeError("Error decoding IMU packet") from e
+        raise DecodeError(f"{port_name} - Error decoding IMU packet") from e
 
 
 if __name__ == "__main__":
@@ -294,4 +337,5 @@ if __name__ == "__main__":
         file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logging.getLogger().addHandler(file_handler)
 
-    start_serial_communication()
+    for port_name in port_names:
+        asyncio.run(start_serial_communication(port_name))
