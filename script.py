@@ -3,11 +3,11 @@
 
 # TODO: add new info (settings) to script
 
-import socket
 import struct
 import argparse
 import logging
 import json
+import serial
 from json.decoder import JSONDecodeError
 from datetime import datetime
 
@@ -15,9 +15,8 @@ from datetime import datetime
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 debug_mode = False
 
-# Echo the data to these details for the program to interpret, recommended to use RealTerm.
-HOST = '127.0.0.1'
-PORT = 9876
+port_names = ['COM4', 'COM5', 'COM6']
+baud_rate = 9600  # Adjust the baud rate as per your device settings
 
 # There's gotta be a better way to do this. Read below for more info.
 r0_prev_main_button_press_count = 0
@@ -44,31 +43,24 @@ class Gravity:
         self.y = y
         self.z = z
 
-
 #
-# Server stuff
-# The code to start a local server to receive the serial data from and the handling of it.
+#   Serial port communication stuff
 #
 
-def start_server():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-        server_socket.bind((HOST, PORT))
-        server_socket.listen()
-        logging.info(f'Server listening on {HOST}:{PORT}')
-        while True:
-            client_socket, client_address = server_socket.accept()
-            logging.info(f'Connection established from {client_address}')
-            handle_client(client_socket)
+def start_serial_communication():
+    for port_name in port_names:
+        try:
+            ser = serial.Serial(port_name, baud_rate, timeout=1)
+            print(f"Serial port {port_name} opened.")
 
+            while True:
+                data = ser.readline().strip()
+                if data:
+                    process_data(data)
 
-def handle_client(client_socket):
-    with client_socket:
-        while True:
-            data = client_socket.recv(1024)
-            if not data:
-                break
-            process_data(data)
-
+            ser.close()
+        except serial.SerialException as e:
+            print(f"Error opening serial port {port_name}: {str(e)}")
 
 def process_data(data):
     lines = data.strip().split(b'\n')
@@ -81,19 +73,43 @@ def process_data(data):
             label, data = parts
             if b'X' in label:
                 # IMU tracker data
-                tracker_number = int(label.split(b'X')[-1])
+                tracker_number = label.split(b'X')[-1]
+                if tracker_number.isdigit():
+                    tracker_number = int(tracker_number)
+                else:
+                    tracker_number = -1
                 process_tracker_data(data, tracker_number)
             elif b'a' in label:
                 # Other tracker data
-                tracker_number = int(label.split(b'a')[-1])
+                tracker_number = label.split(b'a')[-1]
+                if tracker_number.isdigit():
+                    tracker_number = int(tracker_number)
+                else:
+                    tracker_number = -1
                 process_other_tracker_data(data, tracker_number)
             elif b'r' in label:
                 # Tracker button info
-                tracker_number = int(label.split(b'r')[-1])
+                tracker_number = label.split(b'r')[-1]
+                if tracker_number.isdigit():
+                    tracker_number = int(tracker_number)
+                else:
+                    tracker_number = -1
                 process_button_data(data, tracker_number)
+            elif b'i' in label:
+                # Dongle/tracker info
+                tracker_number = label.split(b'v')[-1]
+                if tracker_number.isdigit():
+                    tracker_number = int(tracker_number)
+                else:
+                    tracker_number = -1
+                process_battery_data(data, tracker_number)
             elif b'v' in label:
                 # Tracker battery info
-                tracker_number = int(label.split(b'v')[-1])
+                tracker_number = label.split(b'v')[-1]
+                if tracker_number.isdigit():
+                    tracker_number = int(tracker_number)
+                else:
+                    tracker_number = -1
                 process_battery_data(data, tracker_number)
             else:
                 logging.info(f"Unknown label: {label}")
@@ -108,7 +124,7 @@ def process_data(data):
 # Gravity has: x, y, z
 #
 
-def process_ankle_motion_data(data):
+def process_ankle_motion_data(data, tracker_num):
     # Process ankle motion data
     # TODO: see how to process the data, but we have it here
     logging.info(f"Received ankle motion data: {data}")
@@ -122,6 +138,7 @@ def log_rotation_and_gravity(tracker_num, rotation, gravity):
 
 
 def process_tracker_data(data, tracker_num):
+    if tracker_num == -1: return
     try:
         if data[-2:] == b'==' and len(data) == 24:
             # Other trackers
@@ -136,7 +153,7 @@ def process_tracker_data(data, tracker_num):
                 decoded_data = data.decode('utf-8')
 
                 ankle_motion_data = decoded_data[-2:]
-                process_ankle_motion_data(ankle_motion_data)
+                process_ankle_motion_data(ankle_motion_data, tracker_num)
 
                 imu_data = decoded_data[:-2]
 
@@ -160,6 +177,7 @@ def process_tracker_data(data, tracker_num):
 #
 
 def process_other_tracker_data(data, tracker_num):
+    if tracker_num == -1: return
     decoded_data = data.decode('utf-8')
     if decoded_data.strip() == '7f7f7f7f7f7f':
         logging.info(f"Searching for tracker {tracker_num}...")
@@ -185,6 +203,7 @@ def process_button_press(tracker_num, main_button_press_count, sub_button_press_
 
 
 def process_button_data(data, tracker_num):
+    if tracker_num == -1: return
     decoded_data = data.decode('utf-8')
 
     if tracker_num == 0:
@@ -213,6 +232,7 @@ def process_button_data(data, tracker_num):
 #
 
 def process_battery_data(data, tracker_num):
+    if tracker_num == -1: return
     try:
         battery_info = json.loads(data)
         print(f"Tracker {tracker_num} remaining: {battery_info.get('battery remaining')}%")
@@ -274,4 +294,4 @@ if __name__ == "__main__":
         file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logging.getLogger().addHandler(file_handler)
 
-    start_server()
+    start_serial_communication()
