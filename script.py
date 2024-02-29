@@ -8,7 +8,6 @@ import argparse
 import logging
 import json
 import serial
-import asyncio
 from json.decoder import JSONDecodeError
 from datetime import datetime
 
@@ -48,7 +47,7 @@ class Gravity:
 #   Serial port communication stuff
 #
 
-async def start_serial_communication(port_name):
+def start_serial_communication(port_name):
     print("trying to open port ", port_name)
     try:
         ser = serial.Serial(port_name, baud_rate, timeout=1)
@@ -337,5 +336,6 @@ if __name__ == "__main__":
         file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logging.getLogger().addHandler(file_handler)
 
+    # no idea why this only opens the first port (COM4)..
     for port_name in port_names:
-        asyncio.run(start_serial_communication(port_name))
+        start_serial_communication(port_name)
