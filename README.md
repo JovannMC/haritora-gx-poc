@@ -1,3 +1,4 @@
+# Check out the haritorax-interpreter NPM package instead! https://github.com/JovannMC/haritorax-interpreter
 # haritora-gx6-poc
 People wanted a way to communicate with the GX6 Communication Dongle for the HaritoraX Wireless trackers, so after a couple days of work here is a proof-of-concept script that does just that!<br>
 
