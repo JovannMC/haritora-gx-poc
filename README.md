@@ -1,4 +1,4 @@
-# Check out the haritorax-interpreter NPM package instead! https://github.com/JovannMC/haritorax-interpreter
+# Check out the haritorax-interpreter NPM package instead, this can may be out of date! https://github.com/JovannMC/haritorax-interpreter
 # haritora-gx6-poc
 People wanted a way to communicate with the GX6 Communication Dongle for the HaritoraX Wireless trackers, so after a couple days of work here is a proof-of-concept script that does just that!<br>
 
@@ -9,7 +9,7 @@ The [SlimeTora](https://github.com/OCSYT/SlimeTora) project allows you to connec
 
 This project allows you to interface with the GX6 Communication Dongle to grab the IMU's tracking data and even detect button presses on the trackers themselves. The script runs a local server which, with the use of software like [RealTerm](https://sourceforge.net/projects/realterm/) to capture and echo the serial data to the server, allows for it to interpret the tracking data for use in software like the [SlimeVR Server](https://github.com/SlimeVR/SlimeVR-Server) and even detect button presses (with how many times they were pressed). **The script rounds the tracking data to 5 decimal places when printing, it is untouched.**
 
-**\* currently still working on implementing it into the project, stay tuned!**
+**\* my [fork](https://github.com/JovannMC/SlimeTora) of the project has support for it, with the rewrite underway which will support it soon (rewriting the entire back and frontend!)**
 
 ## Features
 - Interpret the IMU's tracking data
@@ -30,38 +30,46 @@ This project allows you to interface with the GX6 Communication Dongle to grab t
 
 The dongle works by acting as a `Generic USB Hub` and within it, three `USB Serial Device`s are plugged in. These serial devices communicate with two trackers each (with a total of all 6 trackers split between the three) which allows the [HaritoraConfigurator](https://shop.shiftall.net/en-us/products/haritoraconfigurator-global) software to communicate with the trackers.
 
-When first opening a connection to the serial port, the software reports the dongle's model number, firmware version, and serial number under the `i` label (followed by unknown `o`/`o0`/`o1` values). The dongle is constantly finding its two trackers under the labels `a0` and `a1`, outputting the value of `7f7f7f7f7f7f` for both. After a tracker is connected to a port, the tracker reports its battery status under the `v0` label - battery voltage, percentage remaining, and status. Then, it starts reporting the IMU tracking data under its specific label (`x0` and `x1`) which is encoded in base64. When either the main or sub button is pressed on the tracker, a `r0` label is used which tracks how many times both buttons have been pressed using hexadecimal under the same 12 bits of data (bit 7 for main, bit 10 for sub), up until 15 (which is `f`, and is 0-indexed) to which it resets back to 0.
+![USBLogView window showing a "Generic USB Hub" and three "USB Serial Devices" plugged in](usblogview.png)
+
+When first opening a connection to the serial port, the software reports the dongle's model number, firmware version, and serial number under the `i` label (followed by unknown `o`/`o0`/`o1` values). The dongle is constantly finding its two trackers under the labels `a0` and `a1`, outputting the value of `7f7f7f7f7f7f` for both. After a tracker is connected to a port, the tracker reports its battery status under the `v0` label - battery voltage, percentage remaining, and status. Then, it starts reporting the IMU tracking data under its specific label (`x0` and `x1`) which is encoded in base64. When either the main or sub button is pressed on the tracker (or the tracker turns on/off), a `r0` label is used which tracks how many times both buttons have been pressed using hexadecimal under the same 12 bits of data (bit 7 for main, bit 10 for sub), up until 15 (which is `f`, and is 0-indexed) to which it resets back to 0. Also within the `r` labels is a way to identify the tracker (bit 5), read the table below:
+
+| Tracker name | Bit 5 value |
+|--------------|-------------|
+| Hip          |      1      |
+| Chest        |      2      |
+| Right knee   |      3      |
+| Right ankle  |      4      |
+| Left knee    |      5      |
+| Left ankle   |      6      |
 
 To set the settings on the tracker, we see `o0` and `o1` being used. It used 14 bits and certain bits are used to represent a setting which are as follows:
 
-- Posture data transfer rate - bit 6
-  - 50FPS = 0
-  - 100FPS = 1
-- Sensor mode - bit 7
-  - Mode 1 = 1
-  - Mode 2 = 0
-- Sensor auto correction - bit 11
-  - Accel(erometer) = 1
-  - Gyro(scope) = 2
-  - Mag(netometer) = 4
-    - To calculate the setting, get the number(s) of the sensors you want to use and add them together. (Accel + Mag = 1 + 4 = 5)
-- Ankle motion detection - bit 14 (last)
-  - Disabled = 0
-  - Enabled = 1
+|          Setting           | Bit | Options         | Value |
+|----------------------------|-----|-----------------|-------|
+| Posture data transfer rate | 6   | 50FPS           |   0   |
+|                            |     | 100FPS          |   1   |
+| Sensor mode                | 7   | Mode 1          |   1   |
+|                            |     | Mode 2          |   0   |
+| Sensor auto correction     | 11  | Accel(erometer) |   1   |
+|                            |     | Gyro(scope)     |   2   |
+|                            |     | Mag(netometer)  |   4   |
+| Ankle motion detection     | 14  | Disabled        |   0   |
+|                            |     | Enabled         |   1   |
 
-![USBLogView window showing a "Generic USB Hub" and three "USB Serial Devices" plugged in](usblogview.png)
+To calculate the setting, get the number(s) of the sensors you want to use and add them together. (Accel + Mag = 1 + 4 = 5)
 
 Examples for values of each label I found (all mostly for tracker 0, however same thing for tracker 1):
 - `i:{"version":"1.0.19","model":"GX6","serial no":"SERIAL"}` - dongle firmware version, model, and serial
 - `i0:{"version":"1.0.22","model":"mc3s","serial no":"SERIAL"}` - tracker firmware version, model, and serial
 - `o0:00000110107000` - the settings for the tracker. 100fps, sensor mode 1, accel+gyro+mag sensor auto correction, and ankle motion detection disabled
-- `o:3050` - unknown, reported after `i`
+- `o:3050` - unknown value for dongle, but seems to correspond to what COM port/order it is (bit 3)
 - `a0:7f7f7f7f7f7f` - searching for/unable to find tracker 0
 - `v0:{"battery voltage":4107,"battery remaining":94,"charge status":"Discharging"}` - battery voltage, percentage remaining, and status for tracker 0
 - `X0:0Ayb3u7+DzWeBxoDVQMAAA==` - raw IMU tracking data for tracker 0, encoded in base64. The last two bits represent the ankle motion data, `==` means nothing (not an ankle tracker)
-- `r0:110060800a00` -  - raw IMU button data for tracker 0 - main button pressed 7 times, sub button pressed 9 times (0-indexed, a = 10 in hex)
+- `r0:110060800a00` -  - raw IMU button data for tracker 0 - main button pressed 7 times, sub button pressed 9 times (0-indexed, a = 10 in hex), is left ankle (bit 5 = 6, 6 = left ankle)
 
-Right now o is unknown (some sort of setting in the dongle?) and I believe a0/a1 could also be used to provide calibration data to the software. **Any help is appreciated!**
+Right now I believe a0/a1 could also be used to provide calibration data to the software (or maybe mag status?). **Any help is appreciated!**
 
 ## Acknowledgements
 * [SlimeTora](https://github.com/OCSYT/SlimeTora) - inspiration of project
