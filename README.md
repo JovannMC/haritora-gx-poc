@@ -36,14 +36,14 @@ When first opening a connection to the serial port, the software reports the don
 
 | Tracker name | Bit 5 value |
 |--------------|-------------|
-| Hip          |      1      |
-| Chest        |      2      |
-| Right knee   |      3      |
-| Right ankle  |      4      |
-| Left knee    |      5      |
-| Left ankle   |      6      |
+| Chest        |      1      |
+| Left knee    |      2      |
+| Left ankle   |      3      |
+| Right knee   |      4      |
+| Right ankle  |      5      |
+| Hip          |      6      |
 
-To set the settings on the tracker, we see `o0` and `o1` being used. It used 14 bits and certain bits are used to represent a setting which are as follows:
+To set the settings on the tracker, we see `o0` and `o1` being used. It uses 14 bits and certain bits are used to represent a setting which are as follows:
 
 |          Setting           | Bit | Options         | Value |
 |----------------------------|-----|-----------------|-------|
