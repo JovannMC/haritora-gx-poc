@@ -1,5 +1,5 @@
 # Check out the haritorax-interpreter NPM package instead, this may become out of date! https://github.com/JovannMC/haritorax-interpreter
-# haritora-gx6-poc
+# haritora-gx-poc
 People wanted a way to communicate with the GX6 Communication Dongle for the HaritoraX Wireless trackers, so after a couple days of work here is a proof-of-concept script that does just that!<br>
 
 ![Showcase of the script, showing the interpreted IMU tracking data from the dongle for tracker 0](showcase.png)
@@ -42,6 +42,8 @@ When first opening a connection to the serial port, the software reports the don
 | Right knee   |      4      |
 | Right ankle  |      5      |
 | Hip          |      6      |
+| Left elbow   |      7      |
+| Right elbow  |      8      |
 
 To set the settings on the tracker, we see `o0` and `o1` being used. It uses 14 bits and certain bits are used to represent a setting which are as follows:
 
